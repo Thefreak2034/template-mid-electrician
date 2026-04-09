@@ -901,6 +901,14 @@ p:last-child {
   text-align: center;
 }
 
+.stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+  color: var(--color-accent);
+}
+
 .stat-number {
   display: block;
   font-family: var(--font-heading);
