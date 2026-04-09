@@ -96,8 +96,9 @@
   }
 
   function animateCounter(el) {
-    var target = parseInt(el.getAttribute('data-target'), 10);
+    var target = parseFloat(el.getAttribute('data-target'));
     var suffix = el.getAttribute('data-suffix') || '';
+    var decimals = parseInt(el.getAttribute('data-decimals'), 10) || 0;
     var duration = 2000;
     var startTime = null;
 
@@ -106,14 +107,14 @@
       var elapsed = timestamp - startTime;
       var progress = Math.min(elapsed / duration, 1);
       var easedProgress = easeOutCubic(progress);
-      var current = Math.floor(easedProgress * target);
+      var current = easedProgress * target;
 
-      el.textContent = current + suffix;
+      el.textContent = (decimals > 0 ? current.toFixed(decimals) : Math.floor(current)) + suffix;
 
       if (progress < 1) {
         requestAnimationFrame(step);
       } else {
-        el.textContent = target + suffix;
+        el.textContent = (decimals > 0 ? target.toFixed(decimals) : target) + suffix;
       }
     }
 
@@ -256,8 +257,10 @@
     }
 
     function validatePhone(phone) {
-      if (!phone) return true; // optional field
-      return /^[\d\s\-+()]{6,20}$/.test(phone);
+      // Phone is required (canonical spec)
+      if (!phone) return false;
+      var cleaned = phone.replace(/\D/g, '');
+      return cleaned.length >= 8 && cleaned.length <= 12;
     }
 
     contactForm.addEventListener('submit', function (e) {
@@ -295,15 +298,14 @@
         hasError = true;
       }
 
-      if (!validatePhone(phone)) {
+      if (!phone) {
+        showFieldError('#contact-phone', 'Please enter your phone number.');
+        hasError = true;
+      } else if (!validatePhone(phone)) {
         showFieldError('#contact-phone', 'Please enter a valid phone number.');
         hasError = true;
       }
-
-      if (!message || message.length < 10) {
-        showFieldError('#contact-message', 'Please enter a message (at least 10 characters).');
-        hasError = true;
-      }
+      // Message is optional — no validation
 
       if (hasError) return;
 
