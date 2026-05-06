@@ -182,7 +182,7 @@
           <div class="hero-img-frame">
             <div class="hero-img-accent hero-img-accent--top" aria-hidden="true"></div>
             <div class="hero-img-accent hero-img-accent--bottom" aria-hidden="true"></div>
-            <img src="images/Living room lighting.jpg" alt="Beautiful living room with professional lighting installation by Buzz Electrical" width="600" height="500" loading="eager">
+            <img src="images/Living room lighting.webp" alt="Beautiful living room with professional lighting installation by Buzz Electrical" width="600" height="500" loading="eager">
           </div>
         </div>
       </div>
@@ -325,8 +325,8 @@
     <div class="container">
       <div class="about-grid">
         <div class="about-img-wrap fade-in">
-          <img src="images/Electrician website base Kitchen.jpg" alt="Professional kitchen electrical installation by Buzz Electrical" class="about-img-main" loading="lazy">
-          <img src="images/Dining room recreated.jpg" alt="Modern dining room lighting by Buzz Electrical" class="about-img-secondary" loading="lazy">
+          <img src="images/Electrician website base Kitchen.webp" alt="Professional kitchen electrical installation by Buzz Electrical" class="about-img-main" loading="lazy">
+          <img src="images/Dining room recreated.webp" alt="Modern dining room lighting by Buzz Electrical" class="about-img-secondary" loading="lazy">
         </div>
         <div class="about-content fade-in">
           <div class="section-subtitle">
@@ -505,7 +505,7 @@
 
         <!-- Right: large image with quote icon overlay -->
         <div class="testimonials-img">
-          <img src="images/Modern Foyer Lighting.jpg" alt="Modern foyer lighting installation by Buzz Electrical" loading="lazy">
+          <img src="images/Modern Foyer Lighting.webp" alt="Modern foyer lighting installation by Buzz Electrical" loading="lazy">
           <div class="testimonials-quote-icon" aria-hidden="true">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg>
           </div>
@@ -516,7 +516,7 @@
   </section>
 
   <!-- ============ CONTACT ============ -->
-  <!-- n8n tokens: {{address}}, {{phone}}, {{email}}, {{google_maps_embed}}, {{client_id}}, {{webhook_url}}, {{cta_text}} -->
+  <!-- n8n tokens: {{address}}, {{phone}}, {{email}}, {{google_maps_embed}}, {{client_id}}, {{webhook_url}}, {{lead_email}}, {{business_name}}, {{cta_text}} -->
   <section id="contact">
     <div class="container">
 
@@ -558,7 +558,7 @@
           ></iframe>
         </div>
         <div class="contact-form-wrap fade-in">
-          <form id="contact-form" class="contact-form" action="https://placeholder-webhook.example.com/contact-form" method="POST" novalidate aria-label="Contact enquiry form">
+          <form id="contact-form" class="contact-form" action="{{webhook_url}}" method="POST" novalidate aria-label="Contact enquiry form">
             <h3>Send Us a Message</h3>
             <p class="form-subtitle">We'll get back to you within 2 hours.</p>
 
@@ -568,8 +568,12 @@
               <input type="text" id="hp-website" name="website" tabindex="-1" autocomplete="off">
             </div>
 
-            <!-- Hidden client ID -->
+            <!-- Hidden routing fields (patched at build time) -->
             <input type="hidden" name="client_id" value="{{client_id}}">
+            <input type="hidden" name="client_business_name" value="{{business_name}}">
+            <input type="hidden" name="notify_email" value="{{lead_email}}">
+            <input type="hidden" name="page_url" value="">
+            <input type="hidden" name="form_rendered_at" value="">
 
             <div class="form-group">
               <label for="contact-name">Name <span class="required">*</span></label>
@@ -594,14 +598,20 @@
 
             <button type="submit" class="btn btn-accent btn-submit" id="submit-btn">
               <span class="btn-default-text">Send Message</span>
-              <span class="btn-loading-text" hidden aria-hidden="true">Sending...</span>
+              <span class="btn-loading-text" hidden aria-hidden="true">
+                <span class="btn-spinner" aria-hidden="true"></span>
+                <span>Sending...</span>
+              </span>
             </button>
-
-            <div class="form-status" id="form-success" hidden role="alert" aria-live="polite"></div>
-            <div class="form-status form-error-msg" id="form-error" hidden role="alert" aria-live="polite">
-              Something went wrong. Please call us on <a href="tel:0412345678">0412 345 678</a> instead.
-            </div>
           </form>
+
+          <div class="form-status" id="form-success" hidden role="alert" aria-live="polite">
+            <h4 class="form-success-title">Thanks for telling us your details.</h4>
+            <p class="form-success-body">A member of our team will contact you as soon as possible to discuss your job.</p>
+          </div>
+          <div class="form-status form-error-msg" id="form-error" hidden role="alert" aria-live="polite">
+            Something went wrong sending your enquiry. Please call us on <a href="tel:{{phone}}">{{phone}}</a>, or <a id="mailto-fallback" href="">email us directly</a>.
+          </div>
         </div>
       </div>
 

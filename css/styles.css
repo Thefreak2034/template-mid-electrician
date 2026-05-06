@@ -17,7 +17,11 @@
   --font-heading: 'Outfit', sans-serif;
   --font-body: 'DM Sans', sans-serif;
 
-  --container-max: 75vw;
+  /* Fixed-pixel max-width keeps the container constrained on desktop while
+     allowing it to fill the viewport (minus padding) on phones. The previous
+     75vw value left ~12.5% dead space on each side of mobile screens, making
+     content feel "skinny down the middle". */
+  --container-max: 1320px;
   --radius-sm: 6px;
   --radius-md: 12px;
   --radius-lg: 20px;
@@ -1760,7 +1764,26 @@ p:last-child {
 }
 
 .btn-loading-text {
-  display: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-loading-text[hidden] { display: none; }
+.btn-default-text[hidden] { display: none; }
+
+.btn-spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btn-spinner-rotate 0.7s linear infinite;
+}
+
+@keyframes btn-spinner-rotate {
+  to { transform: rotate(360deg); }
 }
 
 .form-group {
@@ -1852,6 +1875,44 @@ p:last-child {
   color: #d32f2f;
 }
 
+/* Inline success block — replaces the form on successful submit.
+   Lives as a sibling of the form inside .contact-form-wrap, so the
+   white card + padding come from the parent. */
+#form-success {
+  text-align: center;
+  padding: 1rem 0;
+  min-height: 0;
+}
+
+.form-success-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-heading);
+  margin: 0 0 0.75rem 0;
+  line-height: 1.3;
+}
+
+.form-success-body {
+  font-size: 1rem;
+  color: var(--color-body);
+  margin: 0;
+  line-height: 1.6;
+}
+
+#form-error {
+  padding: 1.25rem;
+  background: #fff5f5;
+  border: 1px solid #d32f2f;
+  border-radius: 8px;
+  text-align: center;
+  color: #d32f2f;
+}
+
+#form-error a {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
 /* Autofill override */
 .form-group input:-webkit-autofill,
 .form-group input:-webkit-autofill:hover,
@@ -1865,6 +1926,10 @@ p:last-child {
   .contact-grid {
     grid-template-columns: 1fr;
   }
+  /* On mobile, put the form above the map so visitors land on the message
+     CTA first instead of having to scroll past the map. */
+  .contact-form-wrap { order: 1; }
+  .contact-map       { order: 2; }
 }
 
 /* ---------- FOOTER ---------- */

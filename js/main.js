@@ -215,28 +215,28 @@
   var contactForm = document.getElementById('contact-form');
 
   if (contactForm) {
-    var formStatus = contactForm.querySelector('.form-status');
+    var formSuccess = document.getElementById('form-success');
+    var formError = document.getElementById('form-error');
+
+    // Stamp page_url + form_rendered_at on render so the n8n time-trap can
+    // verify the visitor took at least 3 seconds to fill the form.
+    var pageUrlField = contactForm.querySelector('input[name="page_url"]');
+    var renderedAtField = contactForm.querySelector('input[name="form_rendered_at"]');
+    if (pageUrlField) pageUrlField.value = location.href;
+    if (renderedAtField) renderedAtField.value = String(Date.now());
 
     function showFieldError(fieldId, message) {
       var field = contactForm.querySelector(fieldId);
       var errorEl = field ? field.parentElement.querySelector('.form-error') : null;
-      if (errorEl) {
-        errorEl.textContent = message;
-      }
-      if (field) {
-        field.style.borderColor = '#d32f2f';
-      }
+      if (errorEl) errorEl.textContent = message;
+      if (field) field.style.borderColor = '#d32f2f';
     }
 
     function clearFieldError(fieldId) {
       var field = contactForm.querySelector(fieldId);
       var errorEl = field ? field.parentElement.querySelector('.form-error') : null;
-      if (errorEl) {
-        errorEl.textContent = '';
-      }
-      if (field) {
-        field.style.borderColor = '';
-      }
+      if (errorEl) errorEl.textContent = '';
+      if (field) field.style.borderColor = '';
     }
 
     function clearAllErrors() {
@@ -246,10 +246,6 @@
       contactForm.querySelectorAll('input, textarea').forEach(function (el) {
         el.style.borderColor = '';
       });
-      if (formStatus) {
-        formStatus.textContent = '';
-        formStatus.className = 'form-status';
-      }
     }
 
     function validateEmail(email) {
@@ -257,10 +253,28 @@
     }
 
     function validatePhone(phone) {
-      // Phone is required (canonical spec)
       if (!phone) return false;
       var cleaned = phone.replace(/\D/g, '');
       return cleaned.length >= 8 && cleaned.length <= 12;
+    }
+
+    function showSuccess() {
+      contactForm.hidden = true;
+      if (formSuccess) formSuccess.hidden = false;
+    }
+
+    function showError(name, email, phone, message) {
+      // Build a mailto: fallback so the lead isn't lost if the webhook fails.
+      var mailto = document.getElementById('mailto-fallback');
+      if (mailto) {
+        var notifyEmailField = contactForm.querySelector('input[name="notify_email"]');
+        var notifyEmail = notifyEmailField ? notifyEmailField.value : '';
+        var subject = encodeURIComponent('Website enquiry from ' + name);
+        var bodyText = 'Name: ' + name + '\nEmail: ' + email + '\nPhone: ' + phone + '\n\n' + message;
+        mailto.href = 'mailto:' + notifyEmail + '?subject=' + subject + '&body=' + encodeURIComponent(bodyText);
+      }
+      contactForm.hidden = true;
+      if (formError) formError.hidden = false;
     }
 
     contactForm.addEventListener('submit', function (e) {
@@ -273,89 +287,69 @@
       var message = contactForm.querySelector('#contact-message').value.trim();
       var honeypot = contactForm.querySelector('#hp-website').value;
 
-      // Honeypot check — if filled, silently "succeed"
+      // Honeypot — silently swap to success without sending anything.
       if (honeypot) {
-        if (formStatus) {
-          formStatus.textContent = 'Thank you! We\'ll be in touch shortly.';
-          formStatus.className = 'form-status success';
-        }
-        contactForm.reset();
+        showSuccess();
         return;
       }
 
       var hasError = false;
-
-      if (!name || name.length < 2) {
-        showFieldError('#contact-name', 'Please enter your full name.');
-        hasError = true;
-      }
-
-      if (!email) {
-        showFieldError('#contact-email', 'Please enter your email address.');
-        hasError = true;
-      } else if (!validateEmail(email)) {
-        showFieldError('#contact-email', 'Please enter a valid email address.');
-        hasError = true;
-      }
-
-      if (!phone) {
-        showFieldError('#contact-phone', 'Please enter your phone number.');
-        hasError = true;
-      } else if (!validatePhone(phone)) {
-        showFieldError('#contact-phone', 'Please enter a valid phone number.');
-        hasError = true;
-      }
-      // Message is optional — no validation
-
+      if (!name || name.length < 2) { showFieldError('#contact-name', 'Please enter your full name.'); hasError = true; }
+      if (!email) { showFieldError('#contact-email', 'Please enter your email address.'); hasError = true; }
+      else if (!validateEmail(email)) { showFieldError('#contact-email', 'Please enter a valid email address.'); hasError = true; }
+      if (!phone) { showFieldError('#contact-phone', 'Please enter your phone number.'); hasError = true; }
+      else if (!validatePhone(phone)) { showFieldError('#contact-phone', 'Please enter a valid phone number.'); hasError = true; }
       if (hasError) return;
 
-      // Disable submit button
       var submitBtn = contactForm.querySelector('.btn-submit');
-      var originalText = submitBtn.textContent;
+      var defaultTextEl = submitBtn.querySelector('.btn-default-text');
+      var loadingTextEl = submitBtn.querySelector('.btn-loading-text');
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Sending...';
+      if (defaultTextEl && loadingTextEl) {
+        defaultTextEl.hidden = true;
+        loadingTextEl.hidden = false;
+      } else {
+        submitBtn.textContent = 'Sending...';
+      }
 
-      // Build form data
-      var formData = new FormData(contactForm);
+      // Build a JSON body so the n8n webhook gets a clean object.
+      var data = {};
+      new FormData(contactForm).forEach(function (v, k) { data[k] = v; });
+
+      // 6-second timeout via AbortController for cross-browser support.
+      var controller = new AbortController();
+      var timeoutId = setTimeout(function () { controller.abort(); }, 6000);
 
       fetch(contactForm.action, {
         method: 'POST',
-        body: formData,
-        headers: {
-          'Accept': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(data),
+        signal: controller.signal
       })
         .then(function (response) {
+          clearTimeout(timeoutId);
           if (response.ok) {
-            if (formStatus) {
-              formStatus.textContent = 'Thank you! Your message has been sent. We\'ll be in touch shortly.';
-              formStatus.className = 'form-status success';
-            }
-            contactForm.reset();
+            showSuccess();
           } else {
-            throw new Error('Server error');
+            throw new Error('Server returned ' + response.status);
           }
         })
         .catch(function () {
-          if (formStatus) {
-            formStatus.textContent = 'Something went wrong. Please call us at 0412 345 678 or try again later.';
-            formStatus.className = 'form-status error';
-          }
+          clearTimeout(timeoutId);
+          showError(name, email, phone, message);
         })
         .finally(function () {
           submitBtn.disabled = false;
-          submitBtn.textContent = originalText;
+          if (defaultTextEl && loadingTextEl) {
+            defaultTextEl.hidden = false;
+            loadingTextEl.hidden = true;
+          }
         });
     });
 
-    // Clear individual field errors on input
     ['#contact-name', '#contact-email', '#contact-phone', '#contact-message'].forEach(function (id) {
       var field = contactForm.querySelector(id);
-      if (field) {
-        field.addEventListener('input', function () {
-          clearFieldError(id);
-        });
-      }
+      if (field) field.addEventListener('input', function () { clearFieldError(id); });
     });
   }
 
